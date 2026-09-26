@@ -1,0 +1,54 @@
+:root {
+  --bg: #0f1115;
+  --card: #171a21;
+  --border: #2a2e37;
+  --text: #e8eaed;
+  --muted: #9aa0aa;
+  --accent: #e11d48;
+  --accent-soft: #3b0a15;
+  --ok: #22c55e;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+.container { max-width: 720px; margin: 0 auto; padding: 24px 16px 64px; }
+header.app-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 14px 16px; border-bottom: 1px solid var(--border);
+}
+header.app-header a { color: var(--text); text-decoration: none; font-weight: 700; }
+.card {
+  background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+  padding: 18px; margin-bottom: 16px;
+}
+h1 { font-size: 22px; }
+h2 { font-size: 17px; margin: 0 0 8px; }
+label { display: block; font-size: 13px; color: var(--muted); margin: 10px 0 4px; }
+input, select, button, textarea {
+  width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border);
+  background: #0d0f13; color: var(--text); font-size: 14px;
+}
+button {
+  background: var(--accent); border: none; font-weight: 700; cursor: pointer; margin-top: 14px;
+}
+button.secondary { background: transparent; border: 1px solid var(--border); color: var(--text); }
+button:disabled { opacity: 0.5; cursor: not-allowed; }
+.error { color: #f87171; font-size: 13px; margin-top: 8px; }
+.muted { color: var(--muted); font-size: 13px; }
+.badge {
+  display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 700;
+}
+.badge.REQUESTED { background: #3b3410; color: #facc15; }
+.badge.MATCHED { background: #0e2f46; color: #38bdf8; }
+.badge.DRIVER_ARRIVED { background: #2b1f45; color: #c084fc; }
+.badge.STARTED { background: #123a25; color: #4ade80; }
+.badge.COMPLETED { background: #123a25; color: var(--ok); }
+.badge.CANCELLED { background: #3b0a15; color: #f87171; }
+.row { display: flex; gap: 10px; align-items: center; justify-content: space-between; }
+.list-item { padding: 12px 0; border-bottom: 1px solid var(--border); }
+.list-item:last-child { border-bottom: none; }
+a.link { color: #38bdf8; text-decoration: none; font-size: 13px; }

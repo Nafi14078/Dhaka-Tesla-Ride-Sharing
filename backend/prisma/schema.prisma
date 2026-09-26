@@ -1,0 +1,128 @@
+// Dhaka Tesla Pool — Prisma schema
+// Money is stored as integer poisha (1 BDT = 100 poisha), never as
+// float/decimal, to avoid rounding drift across base fare + distance
+// charge - pool discount arithmetic. See README "Fare Model & Money".
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  PASSENGER
+  DRIVER
+}
+
+enum RideStatus {
+  REQUESTED
+  MATCHED
+  DRIVER_ARRIVED
+  STARTED
+  COMPLETED
+  CANCELLED
+}
+
+enum PoolStatus {
+  OPEN            // accepting more pooled passengers, no driver committed yet
+  MATCHED         // driver accepted, seats reserved
+  DRIVER_ARRIVED
+  STARTED
+  COMPLETED
+  CANCELLED
+}
+
+model User {
+  id           String     @id @default(cuid())
+  name         String
+  email        String     @unique
+  passwordHash String
+  role         Role
+  phone        String?
+  createdAt    DateTime   @default(now())
+
+  vehicles      Vehicle[]      @relation("DriverVehicles")
+  rideRequests  RideRequest[]  @relation("PassengerRideRequests")
+  statusEvents  StatusEvent[]  @relation("StatusEventActor")
+}
+
+model Vehicle {
+  id        String   @id @default(cuid())
+  driverId  String   @unique // MVP assumption: one active Tesla per driver (see README §Assumptions)
+  driver    User     @relation("DriverVehicles", fields: [driverId], references: [id])
+  name      String   // e.g. "Bullet"
+  capacity  Int      // fixed seat count, e.g. 3
+  isOnline  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  pools Pool[]
+
+  @@index([isOnline])
+}
+
+model Pool {
+  id          String     @id @default(cuid())
+  vehicleId   String
+  vehicle     Vehicle    @relation(fields: [vehicleId], references: [id])
+  status      PoolStatus @default(OPEN)
+  pickupZone  String     // matching rule key — see lib/matching.ts
+  version     Int        @default(0) // optimistic-lock guard for concurrent seat claims
+  startedAt   DateTime?
+  completedAt DateTime?
+  createdAt   DateTime   @default(now())
+
+  rideRequests RideRequest[]
+
+  @@index([pickupZone, status])
+}
+
+model RideRequest {
+  id              String     @id @default(cuid())
+  passengerId     String
+  passenger       User       @relation("PassengerRideRequests", fields: [passengerId], references: [id])
+  poolId          String?
+  pool            Pool?      @relation(fields: [poolId], references: [id])
+
+  pickupZone      String
+  destinationZone String
+  pickupLat       Float
+  pickupLng       Float
+  destLat         Float
+  destLng         Float
+  seats           Int        @default(1)
+
+  status          RideStatus @default(REQUESTED)
+
+  baseFarePoisha       Int   @default(0)
+  distanceChargePoisha Int   @default(0)
+  poolDiscountPoisha   Int   @default(0)
+  totalFarePoisha      Int   @default(0)
+
+  cancelledAt DateTime?
+  cancelReason String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  statusEvents StatusEvent[]
+
+  @@index([passengerId])
+  @@index([status])
+  @@index([pickupZone, destinationZone])
+}
+
+model StatusEvent {
+  id            String      @id @default(cuid())
+  rideRequestId String
+  rideRequest   RideRequest @relation(fields: [rideRequestId], references: [id])
+  fromStatus    String
+  toStatus      String
+  changedById   String
+  changedBy     User        @relation("StatusEventActor", fields: [changedById], references: [id])
+  changedAt     DateTime    @default(now())
+
+  @@index([rideRequestId])
+}
