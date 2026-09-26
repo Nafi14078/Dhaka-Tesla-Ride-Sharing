@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api, ApiError } from "@/lib/api";
 import { getSession } from "@/lib/auth";
+import { addNotification } from "@/lib/notifications";
 
 function poisha(n: number) {
   return `৳${(n / 100).toFixed(2)}`;
@@ -83,7 +84,9 @@ export default function DriverPage() {
     setError("");
     setBusy(true);
     try {
+      const request = pending.find((ride) => ride.id === id);
       const updated = await api.acceptRequest(id);
+      addNotification(`driver-accepted:${updated.id}`, `You accepted ${request?.passenger?.name || "a passenger"}'s request: ${request?.pickupZone || "pickup"} to ${request?.destinationZone || "destination"}.`);
       await loadPending();
       await refreshActivePool(updated.poolId);
     } catch (err) {
@@ -115,6 +118,7 @@ export default function DriverPage() {
     try {
       await api.advancePool(activePool.id, action);
       if (action === "complete") {
+        addNotification(`driver-completed:${activePool.id}`, `Journey from ${activePool.pickupZone} is complete.`);
         setActivePool(null);
       } else {
         await refreshActivePool(activePool.id);
