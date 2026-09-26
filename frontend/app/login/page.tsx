@@ -27,22 +27,26 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="container">
+    <main className="page page-narrow">
       <div className="card">
+        <p className="eyebrow">Welcome back</p>
         <h1>Log in</h1>
-        <p className="muted">
-          Demo accounts (seed data): jashim@dhakatesla.dev / nusrat@dhakatesla.dev / rafiq@dhakatesla.dev
-          — password: password123
-        </p>
+        <div className="hint" style={{ marginTop: 14 }}>
+          Demo: <strong>jashim@dhakatesla.dev</strong> (driver) or{" "}
+          <strong>nusrat@dhakatesla.dev</strong> (passenger) — password <code>password123</code>
+        </div>
         <form onSubmit={handleSubmit}>
           <label>Email</label>
-          <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" required />
+          <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" required autoFocus />
           <label>Password</label>
           <input value={password} onChange={(e) => setPassword(e.target.value)} type="password" required />
           {error && <div className="error">{error}</div>}
-          <button disabled={loading} type="submit">{loading ? "Logging in..." : "Log in"}</button>
+          <button className="btn-block" disabled={loading} type="submit">
+            {loading ? <><span className="spinner" />Logging in...</> : "Log in"}
+          </button>
         </form>
-        <p className="muted" style={{ marginTop: 12 }}>
+        <hr className="divider" />
+        <p className="muted">
           No account? <a className="link" href="/signup">Sign up</a>
         </p>
       </div>

@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { getSession, clearSession, StoredUser } from "@/lib/auth";
+import { getSession, StoredUser } from "@/lib/auth";
 
 export default function Home() {
   const [user, setUser] = useState<StoredUser | null>(null);
@@ -11,39 +11,53 @@ export default function Home() {
 
   if (user) {
     return (
-      <main className="container">
-        <div className="card">
-          <h1>Welcome back, {user.name}</h1>
-          <p className="muted">Signed in as {user.role.toLowerCase()}</p>
-          <a className="link" href={user.role === "DRIVER" ? "/driver" : "/passenger"}>
-            Go to your dashboard →
+      <main className="page">
+        <div className="hero-card">
+          <p className="eyebrow">Welcome back</p>
+          <h1>Hi, {user.name.split(" ")[0]} 👋</h1>
+          <p className="lede">
+            {user.role === "DRIVER"
+              ? "Jump back into your driver dashboard to manage requests and trips."
+              : "Ready to book your next pooled ride across Dhaka?"}
+          </p>
+          <a href={user.role === "DRIVER" ? "/driver" : "/passenger"}>
+            <button>{user.role === "DRIVER" ? "Open driver dashboard →" : "Request a ride →"}</button>
           </a>
-          <button
-            className="secondary"
-            style={{ marginTop: 16 }}
-            onClick={() => {
-              clearSession();
-              setUser(null);
-            }}
-          >
-            Sign out
-          </button>
         </div>
       </main>
     );
   }
 
   return (
-    <main className="container">
-      <div className="card">
-        <h1>Share a seat. Split the fare.</h1>
-        <p className="muted">
-          Jashim drives Bullet, his three-seat Tesla. Book a ride, pool with a stranger heading
-          the same way, and split the fare — fairly.
+    <main className="page">
+      <div className="hero-card">
+        <p className="eyebrow">Ride-pooling for Dhaka</p>
+        <h1>Share a seat.<br />Split the fare.</h1>
+        <p className="lede">
+          Jashim drives Bullet, his three-seat Tesla. Book a ride, get pooled with a stranger
+          heading the same way, and split the fare fairly — no surge, no haggling.
         </p>
-        <a className="link" href="/login">Log in</a>
-        {" · "}
-        <a className="link" href="/signup">Sign up</a>
+        <div style={{ display: "flex", gap: 10 }}>
+          <a href="/signup"><button>Get started</button></a>
+          <a href="/login"><button className="secondary">Log in</button></a>
+        </div>
+      </div>
+
+      <div className="grid-2">
+        <div className="card">
+          <h2>🧭 For passengers</h2>
+          <p className="muted">
+            Request a ride by zone, get an instant fare estimate, and track your driver in
+            real time — from matched to on the road to dropped off.
+          </p>
+        </div>
+        <div className="card">
+          <h2>🚦 For drivers</h2>
+          <p className="muted">
+            See pending requests near your pickup zone, accept a rider, and pool a second
+            or third one in when there's room — never overbooked.
+          </p>
+        </div>
       </div>
     </main>
   );

@@ -29,17 +29,34 @@ export default function SignupPage() {
   }
 
   return (
-    <main className="container">
+    <main className="page page-narrow">
       <div className="card">
+        <p className="eyebrow">Get started</p>
         <h1>Sign up</h1>
+        <p className="lede" style={{ marginTop: 6 }}>Passenger or driver — pick one below.</p>
+
+        <div className="row" style={{ gap: 10, marginBottom: 4 }}>
+          <button
+            type="button"
+            className={role === "PASSENGER" ? "" : "secondary"}
+            style={{ flex: 1, marginTop: 0 }}
+            onClick={() => setRole("PASSENGER")}
+          >
+            🧍 Passenger
+          </button>
+          <button
+            type="button"
+            className={role === "DRIVER" ? "" : "secondary"}
+            style={{ flex: 1, marginTop: 0 }}
+            onClick={() => setRole("DRIVER")}
+          >
+            🚗 Driver
+          </button>
+        </div>
+
         <form onSubmit={handleSubmit}>
-          <label>I am a</label>
-          <select value={role} onChange={(e) => setRole(e.target.value as any)}>
-            <option value="PASSENGER">Passenger</option>
-            <option value="DRIVER">Driver</option>
-          </select>
           <label>Name</label>
-          <input value={name} onChange={(e) => setName(e.target.value)} required />
+          <input value={name} onChange={(e) => setName(e.target.value)} required autoFocus />
           <label>Email</label>
           <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" required />
           <label>Password</label>
@@ -51,9 +68,12 @@ export default function SignupPage() {
             required
           />
           {error && <div className="error">{error}</div>}
-          <button disabled={loading} type="submit">{loading ? "Creating account..." : "Sign up"}</button>
+          <button className="btn-block" disabled={loading} type="submit">
+            {loading ? <><span className="spinner" />Creating account...</> : `Sign up as ${role === "DRIVER" ? "driver" : "passenger"}`}
+          </button>
         </form>
-        <p className="muted" style={{ marginTop: 12 }}>
+        <hr className="divider" />
+        <p className="muted">
           Already have an account? <a className="link" href="/login">Log in</a>
         </p>
       </div>

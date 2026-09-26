@@ -1,5 +1,6 @@
 import "./globals.css";
 import type { ReactNode } from "react";
+import NavBar from "@/components/NavBar";
 
 export const metadata = {
   title: "Dhaka Tesla Pool",
@@ -10,9 +11,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <body>
-        <header className="app-header">
-          <a href="/">🛺 Dhaka Tesla Pool</a>
-        </header>
+        <NavBar />
         {children}
       </body>
     </html>

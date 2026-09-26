@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api, ApiError } from "@/lib/api";
 import { getSession } from "@/lib/auth";
@@ -9,6 +9,14 @@ function poisha(n: number) {
 }
 
 const CANCELLABLE = ["REQUESTED", "MATCHED"];
+const STATUS_LABEL: Record<string, string> = {
+  REQUESTED: "Finding a match",
+  MATCHED: "Matched",
+  DRIVER_ARRIVED: "Driver arrived",
+  STARTED: "On the way",
+  COMPLETED: "Completed",
+  CANCELLED: "Cancelled",
+};
 
 export default function PassengerPage() {
   const router = useRouter();
@@ -42,7 +50,7 @@ export default function PassengerPage() {
       setDestinationZone(names[1] ?? names[0] ?? "");
     });
     loadRides();
-    const interval = setInterval(loadRides, 5000); // poll for status updates
+    const interval = setInterval(loadRides, 5000);
     return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -70,56 +78,105 @@ export default function PassengerPage() {
     }
   }
 
-  return (
-    <main className="container">
-      <div className="card">
-        <h2>Request a ride</h2>
-        <form onSubmit={handleRequest}>
-          <label>Pickup zone</label>
-          <select value={pickupZone} onChange={(e) => setPickupZone(e.target.value)}>
-            {zones.map((z) => (
-              <option key={z} value={z}>{z}</option>
-            ))}
-          </select>
-          <label>Destination zone</label>
-          <select value={destinationZone} onChange={(e) => setDestinationZone(e.target.value)}>
-            {zones.map((z) => (
-              <option key={z} value={z}>{z}</option>
-            ))}
-          </select>
-          <label>Seats</label>
-          <input
-            type="number"
-            min={1}
-            max={3}
-            value={seats}
-            onChange={(e) => setSeats(Number(e.target.value))}
-          />
-          {error && <div className="error">{error}</div>}
-          <button disabled={loading} type="submit">{loading ? "Requesting..." : "Request ride"}</button>
-        </form>
-      </div>
+  const stats = useMemo(() => {
+    const active = rides.filter((r) => !["COMPLETED", "CANCELLED"].includes(r.status)).length;
+    const completed = rides.filter((r) => r.status === "COMPLETED").length;
+    const saved = rides
+      .filter((r) => r.status === "COMPLETED")
+      .reduce((s, r) => s + (r.poolDiscountPoisha || 0), 0);
+    return { active, completed, saved };
+  }, [rides]);
 
-      <div className="card">
-        <h2>Your rides</h2>
-        {rides.length === 0 && <p className="muted">No rides yet — request one above.</p>}
-        {rides.map((r) => (
-          <div key={r.id} className="list-item">
-            <div className="row">
-              <strong>{r.pickupZone} → {r.destinationZone}</strong>
-              <span className={`badge ${r.status}`}>{r.status.replace("_", " ")}</span>
-            </div>
-            <p className="muted">
-              {r.seats} seat(s) · fare estimate {poisha(r.totalFarePoisha)}
-              {r.poolDiscountPoisha > 0 && ` (pooled, saved ${poisha(r.poolDiscountPoisha)})`}
-            </p>
-            {CANCELLABLE.includes(r.status) && (
-              <button className="secondary" onClick={() => handleCancel(r.id)}>
-                Cancel
+  return (
+    <main className="page">
+      <p className="eyebrow">Passenger</p>
+      <h1 style={{ marginBottom: 20 }}>Where to?</h1>
+
+      {rides.length > 0 && (
+        <div className="stat-grid">
+          <div className="stat">
+            <div className="stat-value">{stats.active}</div>
+            <div className="stat-label">Active</div>
+          </div>
+          <div className="stat">
+            <div className="stat-value">{stats.completed}</div>
+            <div className="stat-label">Completed</div>
+          </div>
+          <div className="stat">
+            <div className="stat-value">{poisha(stats.saved)}</div>
+            <div className="stat-label">Saved pooling</div>
+          </div>
+        </div>
+      )}
+
+      <div className="grid-2">
+        <div>
+          <div className="card">
+            <h2>🧭 Request a ride</h2>
+            <form onSubmit={handleRequest}>
+              <label>Pickup zone</label>
+              <select value={pickupZone} onChange={(e) => setPickupZone(e.target.value)}>
+                {zones.map((z) => (
+                  <option key={z} value={z}>{z}</option>
+                ))}
+              </select>
+              <label>Destination zone</label>
+              <select value={destinationZone} onChange={(e) => setDestinationZone(e.target.value)}>
+                {zones.map((z) => (
+                  <option key={z} value={z}>{z}</option>
+                ))}
+              </select>
+              <label>Seats</label>
+              <input
+                type="number"
+                min={1}
+                max={3}
+                value={seats}
+                onChange={(e) => setSeats(Number(e.target.value))}
+              />
+              {error && <div className="error">{error}</div>}
+              <button className="btn-block" disabled={loading} type="submit">
+                {loading ? <><span className="spinner" />Requesting...</> : "Request ride"}
               </button>
+            </form>
+          </div>
+        </div>
+
+        <div>
+          <div className="card">
+            <h2>📋 Your rides</h2>
+            {rides.length === 0 ? (
+              <div className="empty">
+                <div className="empty-icon">🛺</div>
+                No rides yet — request one to get started.
+              </div>
+            ) : (
+              <div className="list">
+                {rides.map((r) => (
+                  <div key={r.id} className="list-item">
+                    <div className="row">
+                      <div className="route">
+                        {r.pickupZone} <span className="arrow">→</span> {r.destinationZone}
+                      </div>
+                      <span className={`badge ${r.status}`}>{STATUS_LABEL[r.status] ?? r.status}</span>
+                    </div>
+                    <p className="muted" style={{ margin: "6px 0 0" }}>
+                      {r.seats} seat(s) · {poisha(r.totalFarePoisha)}
+                      {r.poolDiscountPoisha > 0 && (
+                        <span style={{ color: "var(--brand)" }}> · saved {poisha(r.poolDiscountPoisha)} pooling</span>
+                      )}
+                    </p>
+                    {CANCELLABLE.includes(r.status) && (
+                      <button className="btn-danger btn-sm" style={{ marginTop: 10 }} onClick={() => handleCancel(r.id)}>
+                        Cancel ride
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
             )}
           </div>
-        ))}
+        </div>
       </div>
     </main>
   );
