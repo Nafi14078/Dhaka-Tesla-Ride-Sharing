@@ -7,11 +7,10 @@
 // - discount across multiple pooled passengers accumulates floating-
 // point rounding error with decimals; integers make every step exact
 // and every intermediate value auditable in tests and in the DB.
-import { distanceKm, findZone } from "./zones";
-
-export const BASE_FARE_POISHA = 3000; // flat 30 BDT boarding fare
-export const PER_KM_POISHA = 1500; // 15 BDT / km
+export const BASE_FARE_POISHA = 0;
+export const PER_KM_POISHA = 2000; // 20 BDT / km
 export const POOL_DISCOUNT_RATE = 0.2; // 20% off (base + distance) when pooled
+import { distanceKm, findZone } from "./zones";
 
 export interface FareBreakdown {
   baseFarePoisha: number;
@@ -30,11 +29,12 @@ export interface FareBreakdown {
 export function computeFare(
   pickupZoneName: string,
   destinationZoneName: string,
-  isPooled: boolean
+  isPooled: boolean,
+  routeDistanceKm?: number
 ): FareBreakdown {
   const pickup = findZone(pickupZoneName);
   const dest = findZone(destinationZoneName);
-  const km = distanceKm(pickup.lat, pickup.lng, dest.lat, dest.lng);
+  const km = routeDistanceKm ?? distanceKm(pickup.lat, pickup.lng, dest.lat, dest.lng);
 
   const baseFarePoisha = BASE_FARE_POISHA;
   const distanceChargePoisha = Math.round(km * PER_KM_POISHA);

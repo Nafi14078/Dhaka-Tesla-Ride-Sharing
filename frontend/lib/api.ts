@@ -42,6 +42,11 @@ export const api = {
 
   zones: () => request<Array<{ name: string }>>("/rides/zones"),
 
+  route: (pickupZone: string, destinationZone: string) =>
+    request<{ distanceKm: number; source: "google" | "straight-line"; farePoisha: number }>(
+      `/rides/route?pickupZone=${encodeURIComponent(pickupZone)}&destinationZone=${encodeURIComponent(destinationZone)}`
+    ),
+
   createRide: (body: { pickupZone: string; destinationZone: string; seats: number }) =>
     request("/rides", { method: "POST", body: JSON.stringify(body) }),
 

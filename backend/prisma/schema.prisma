@@ -92,6 +92,7 @@ model RideRequest {
   pickupLng       Float
   destLat         Float
   destLng         Float
+  distanceKm      Float       @default(0)
   seats           Int        @default(1)
 
   status          RideStatus @default(REQUESTED)

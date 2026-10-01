@@ -27,6 +27,7 @@ export default function PassengerPage() {
   const [rides, setRides] = useState<any[]>([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [route, setRoute] = useState<{ distanceKm: number; source: "google" | "straight-line"; farePoisha: number } | null>(null);
 
   async function loadRides() {
     try {
@@ -54,6 +55,13 @@ export default function PassengerPage() {
     return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (!pickupZone || !destinationZone) return;
+    let current = true;
+    api.route(pickupZone, destinationZone).then((value) => { if (current) setRoute(value); }).catch(() => { if (current) setRoute(null); });
+    return () => { current = false; };
+  }, [pickupZone, destinationZone]);
 
   async function handleRequest(e: React.FormEvent) {
     e.preventDefault();
@@ -126,6 +134,22 @@ export default function PassengerPage() {
                   <option key={z} value={z}>{z}</option>
                 ))}
               </select>
+              {pickupZone && destinationZone && (
+                <div style={{ margin: "14px 0 18px" }}>
+                  <iframe
+                    title={`Route from ${pickupZone} to ${destinationZone}`}
+                    width="100%"
+                    height="220"
+                    style={{ border: 0, borderRadius: 10 }}
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                    src={`https://www.google.com/maps?output=embed&saddr=${encodeURIComponent(`${pickupZone}, Dhaka`)}&daddr=${encodeURIComponent(`${destinationZone}, Dhaka`)}`}
+                  />
+                  <p className="muted" style={{ margin: "8px 0 0" }}>
+                    {route ? `${route.distanceKm.toFixed(1)} km · estimated fare ${poisha(route.farePoisha)} at ৳20/km${route.source === "google" ? " · Google driving route" : " · straight-line estimate; add GOOGLE_MAPS_API_KEY for driving distance"}` : "Loading route distance…"}
+                  </p>
+                </div>
+              )}
               <label>Seats</label>
               <input
                 type="number"

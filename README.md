@@ -14,7 +14,7 @@ Nusrat wants to get from Banani to Mohakhali. Rafiq, booking two
 minutes later, wants Banani to Gulshan 1 — overlapping but not
 identical. The app has to decide, fast, whether they can share a seat,
 split the fare fairly, and track the ride to a clean finish — without
-real map/routing infrastructure, and without ever letting Jashim's
+requiring a Google Maps key for local development, and without ever letting Jashim's
 3-seat Bullet get overbooked, even if two passengers grab the last seat
 at the same instant.
 
@@ -73,7 +73,7 @@ REQUESTED → MATCHED → DRIVER_ARRIVED → STARTED → COMPLETED
 
 ## Matching Rule
 
-Kept deliberately simple (no real routing/maps API, per the brief):
+Routing uses Google's Routes API when `GOOGLE_MAPS_API_KEY` is configured. Local development without a key uses a labeled straight-line estimate.
 zones are a fixed list of Dhaka areas with plain lat/lng centroids
 (`backend/src/lib/zones.ts`), grouped into route "clusters." Two ride
 requests are compatible for pooling when:
@@ -92,7 +92,7 @@ passengerFare = baseFare + distanceCharge - poolDiscount
 ```
 
 - `baseFare` = ৳30 flat (3000 poisha)
-- `distanceCharge` = ৳15/km (1500 poisha/km) × haversine distance between pickup and destination zone centroids
+- `distanceCharge` = ৳20/km (2000 poisha/km) × Google driving distance when configured; otherwise straight-line zone-centroid distance
 - `poolDiscount` = 20% of `(baseFare + distanceCharge)`, applied per rider, **only** while that rider is actively sharing a pool with someone else
 
 **Money is stored as integer poisha (1 BDT = 100 poisha)** everywhere —

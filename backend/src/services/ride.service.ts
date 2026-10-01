@@ -3,6 +3,7 @@ import { prisma } from "../lib/prisma";
 import { computeFare } from "../lib/fare";
 import { canJoinPool } from "../lib/matching";
 import { findZone } from "../lib/zones";
+import { getRouteDistance } from "../lib/routes";
 import { assertValidTransition, ACTIVE_STATUSES, CANCELLABLE_STATUSES } from "../lib/stateMachine";
 import { RideError } from "./errors";
 
@@ -24,7 +25,8 @@ export async function createRideRequest(params: {
   const dest = findZone(params.destinationZone);
   if (params.seats < 1) throw new RideError("seats must be at least 1", 422);
 
-  const fare = computeFare(params.pickupZone, params.destinationZone, false);
+  const route = await getRouteDistance(params.pickupZone, params.destinationZone);
+  const fare = computeFare(params.pickupZone, params.destinationZone, false, route.distanceKm);
 
   return prisma.rideRequest.create({
     data: {
@@ -35,6 +37,7 @@ export async function createRideRequest(params: {
       pickupLng: pickup.lng,
       destLat: dest.lat,
       destLng: dest.lng,
+      distanceKm: route.distanceKm,
       seats: params.seats,
       status: "REQUESTED",
       baseFarePoisha: fare.baseFarePoisha,
@@ -149,7 +152,7 @@ export async function joinPool(poolId: string, rideRequestId: string, driverId: 
     const allMemberIds = [...members.map((m: { id: string }) => m.id), rideRequestId];
     for (const id of allMemberIds) {
       const member = id === rideRequestId ? request : members.find((m: { id: string }) => m.id === id)!;
-      const fare = computeFare(member.pickupZone, member.destinationZone, true);
+      const fare = computeFare(member.pickupZone, member.destinationZone, true, member.distanceKm);
       await tx.rideRequest.update({
         where: { id },
         data: {

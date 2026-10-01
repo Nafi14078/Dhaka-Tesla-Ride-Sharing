@@ -6,6 +6,8 @@ import * as rideService from "../services/ride.service";
 import { prisma } from "../lib/prisma";
 import { RideError } from "../services/errors";
 import { ZONES } from "../lib/zones";
+import { getRouteDistance } from "../lib/routes";
+import { computeFare } from "../lib/fare";
 
 const router = Router();
 router.use(requireAuth);
@@ -14,6 +16,14 @@ router.use(requireAuth);
 router.get("/zones", (_req, res) => {
   res.json(ZONES.map((z) => ({ name: z.name })));
 });
+
+router.get("/route", asyncHandler(async (req, res) => {
+  const pickupZone = String(req.query.pickupZone ?? "");
+  const destinationZone = String(req.query.destinationZone ?? "");
+  const route = await getRouteDistance(pickupZone, destinationZone);
+  const fare = computeFare(pickupZone, destinationZone, false, route.distanceKm);
+  res.json({ ...route, farePoisha: fare.totalFarePoisha });
+}));
 
 router.post(
   "/",
