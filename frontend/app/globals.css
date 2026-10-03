@@ -295,6 +295,25 @@ a.link:hover { text-decoration: underline; }
 @keyframes pop-in { from { opacity: 0; transform: scale(.985); } to { opacity: 1; transform: scale(1); } }
 @keyframes spin { to { transform: rotate(360deg); } }
 
+.drive-progress {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0 4px;
+  padding: 14px;
+  border: 1px solid var(--border, #e7e5e4);
+  border-radius: 12px;
+  background: var(--surface-soft, #faf9f6);
+}
+.drive-progress > span { font-size: .9rem; }
+.drive-route { display: flex; align-items: center; gap: 8px; height: 30px; }
+.drive-point { width: 10px; height: 10px; flex: 0 0 10px; border-radius: 50%; background: var(--brand, #2563eb); }
+.drive-point.destination { background: #24a16b; }
+.drive-road { position: relative; height: 3px; flex: 1; border-radius: 4px; background: repeating-linear-gradient(90deg, #9ca3af 0 8px, transparent 8px 14px); }
+.drive-car { position: absolute; left: 0; top: 50%; font-size: 22px; line-height: 1; transform: translate(-50%, -58%); animation: drive-across 5s ease-in-out forwards; }
+.drive-progress.start .drive-car { animation-duration: 14s; }
+@keyframes drive-across { from { left: 0; } to { left: 100%; } }
+@media (prefers-reduced-motion: reduce) { .drive-car { animation-duration: .01ms !important; } }
+
 @media (max-width: 700px) {
   .app-header, .topbar { min-height: 62px; padding: 10px 18px; }
   .page, .page-narrow { width: min(100% - 32px, 540px); padding-top: 30px; }

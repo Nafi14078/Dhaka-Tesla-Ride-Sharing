@@ -66,6 +66,7 @@ export const api = {
   acceptRequest: (id: string) => request<any>(`/driver/requests/${id}/accept`, { method: "POST" }),
   joinPool: (poolId: string, rideRequestId: string) =>
     request<any>("/driver/pools/join", { method: "POST", body: JSON.stringify({ poolId, rideRequestId }) }),
+  currentPool: () => request<any | null>("/driver/current-pool"),
   poolDetail: (id: string) => request<any>(`/driver/pools/${id}`),
   advancePool: (id: string, action: "arrive" | "start" | "complete") =>
     request<any>(`/driver/pools/${id}/${action}`, { method: "POST" }),

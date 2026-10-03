@@ -93,6 +93,7 @@ model RideRequest {
   destLat         Float
   destLng         Float
   distanceKm      Float       @default(0)
+  routePath       String      @default("[]")
   seats           Int        @default(1)
 
   status          RideStatus @default(REQUESTED)

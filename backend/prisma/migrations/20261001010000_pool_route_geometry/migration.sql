@@ -1,0 +1,1 @@
+ALTER TABLE "RideRequest" ADD COLUMN "routePath" TEXT NOT NULL DEFAULT '[]';

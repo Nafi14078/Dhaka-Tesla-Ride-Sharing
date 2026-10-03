@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api, ApiError } from "@/lib/api";
 import { getSession } from "@/lib/auth";
@@ -18,6 +18,9 @@ export default function DriverPage() {
   const [activePool, setActivePool] = useState<any>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [drivingAction, setDrivingAction] = useState<"arrive" | "start" | null>(null);
+  const activePoolRequestVersion = useRef(0);
+  const tripActionInProgress = useRef(false);
 
   async function loadVehicle() {
     try {
@@ -38,12 +41,24 @@ export default function DriverPage() {
     }
   }
 
+  async function loadActivePool() {
+    if (tripActionInProgress.current) return;
+    const requestVersion = ++activePoolRequestVersion.current;
+    try {
+      const pool = await api.currentPool();
+      if (requestVersion === activePoolRequestVersion.current) setActivePool(pool);
+    } catch {
+      /* ignore while unauthenticated/no vehicle */
+    }
+  }
+
   async function refreshActivePool(poolId: string) {
+    const requestVersion = ++activePoolRequestVersion.current;
     try {
       const pool = await api.poolDetail(poolId);
-      setActivePool(pool);
+      if (requestVersion === activePoolRequestVersion.current) setActivePool(pool);
     } catch {
-      setActivePool(null);
+      if (requestVersion === activePoolRequestVersion.current) setActivePool(null);
     }
   }
 
@@ -55,7 +70,11 @@ export default function DriverPage() {
     }
     loadVehicle();
     loadPending();
-    const interval = setInterval(loadPending, 5000);
+    loadActivePool();
+    const interval = setInterval(() => {
+      loadPending();
+      loadActivePool();
+    }, 5000);
     return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -113,9 +132,20 @@ export default function DriverPage() {
 
   async function handleAdvance(action: "arrive" | "start" | "complete") {
     if (!activePool) return;
+    tripActionInProgress.current = true;
+    // Ignore any poll that began before this state change and finishes late.
+    activePoolRequestVersion.current += 1;
     setError("");
     setBusy(true);
+    if (action !== "complete") setDrivingAction(action);
     try {
+      // Give the driver a short, visible journey before the trip status advances.
+      if (action === "arrive") await new Promise((resolve) => setTimeout(resolve, 5000));
+      if (action === "start") {
+        const distanceKm = activePool.rideRequests.reduce((longest: number, ride: any) => Math.max(longest, Number(ride.distanceKm) || 0), 0);
+        const driveMs = Math.min(18000, Math.max(8000, distanceKm * 700));
+        await new Promise((resolve) => setTimeout(resolve, driveMs));
+      }
       await api.advancePool(activePool.id, action);
       if (action === "complete") {
         addNotification(`driver-completed:${activePool.id}`, `Journey from ${activePool.pickupZone} is complete.`);
@@ -127,7 +157,9 @@ export default function DriverPage() {
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Could not update trip");
     } finally {
+      tripActionInProgress.current = false;
       setBusy(false);
+      setDrivingAction(null);
     }
   }
 
@@ -201,6 +233,17 @@ export default function DriverPage() {
             <h2>🧳 Current trip</h2>
             <span className={`badge ${activePool.status}`}>{activePool.status.replace("_", " ")}</span>
           </div>
+          {drivingAction && (
+            <div className={`drive-progress ${drivingAction}`} role="status" aria-live="polite">
+              <div className="drive-route">
+                <span className="drive-point" />
+                <span className="drive-road"><span className="drive-car" aria-hidden="true">🚘</span></span>
+                <span className="drive-point destination" />
+              </div>
+              <strong>{drivingAction === "arrive" ? "Driving to pickup…" : "Trip in progress…"}</strong>
+              <span className="muted">{drivingAction === "arrive" ? "The driver is on the way to the pickup point." : "The vehicle is travelling to the destination."}</span>
+            </div>
+          )}
           <div className="list">
             {activePool.rideRequests.map((r: any) => (
               <div key={r.id} className="list-item">
@@ -245,6 +288,9 @@ export default function DriverPage() {
                 </div>
                 <p className="muted route" style={{ marginTop: 4, marginBottom: 10 }}>
                   {r.pickupZone} <span className="arrow">→</span> {r.destinationZone}
+                </p>
+                <p className="muted" style={{ marginTop: -5, marginBottom: 10 }}>
+                  {Number(r.distanceKm || 0).toFixed(1)} km · estimated solo fare {poisha(r.totalFarePoisha)}; pooled fares follow each rider’s route distance
                 </p>
                 {activePool && activePool.status === "MATCHED" ? (
                   <button className="secondary btn-sm" disabled={busy} onClick={() => handleJoin(r.id)}>

@@ -1,7 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma";
 import { computeFare } from "../lib/fare";
-import { canJoinPool } from "../lib/matching";
+import { canJoinPool, routesShareCorridor } from "../lib/matching";
 import { findZone } from "../lib/zones";
 import { getRouteDistance } from "../lib/routes";
 import { assertValidTransition, ACTIVE_STATUSES, CANCELLABLE_STATUSES } from "../lib/stateMachine";
@@ -38,6 +38,7 @@ export async function createRideRequest(params: {
       destLat: dest.lat,
       destLng: dest.lng,
       distanceKm: route.distanceKm,
+      routePath: JSON.stringify(route.routePath),
       seats: params.seats,
       status: "REQUESTED",
       baseFarePoisha: fare.baseFarePoisha,
@@ -57,6 +58,12 @@ export async function acceptRideRequest(rideRequestId: string, driverId: string)
     const vehicle = await tx.vehicle.findUnique({ where: { driverId } });
     if (!vehicle) throw new RideError("Driver has no registered Tesla", 404);
     if (!vehicle.isOnline) throw new RideError("Go online before accepting rides", 409);
+    const activePool = await tx.pool.findFirst({
+      where: { vehicleId: vehicle.id, status: { in: ["OPEN", "MATCHED", "DRIVER_ARRIVED", "STARTED"] } },
+    });
+    if (activePool) {
+      throw new RideError("This Tesla is already committed to a trip. New trips can be accepted after it is completed", 409);
+    }
 
     const request = await tx.rideRequest.findUnique({ where: { id: rideRequestId } });
     if (!request) throw new RideError("Ride request not found", 404);
@@ -130,6 +137,9 @@ export async function joinPool(poolId: string, rideRequestId: string, driverId: 
       throw new RideError("Ride request is not joinable", 409);
     }
 
+    if (!members.length || !routesShareCorridor(JSON.parse(members[0].routePath || "[]"), JSON.parse(request.routePath || "[]"))) {
+      throw new RideError("This journey does not follow the same Google Maps route", 409);
+    }
     const check = canJoinPool(
       {
         id: pool.id,
@@ -138,6 +148,7 @@ export async function joinPool(poolId: string, rideRequestId: string, driverId: 
         vehicleCapacity: vehicle.capacity,
         occupiedSeats,
         sampleDestinationZone,
+        routeCompatible: true,
       },
       request.pickupZone,
       request.destinationZone,

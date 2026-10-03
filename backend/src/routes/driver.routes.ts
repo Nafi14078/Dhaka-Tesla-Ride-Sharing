@@ -80,6 +80,30 @@ router.post(
   })
 );
 
+// The driver's in-progress trip must be loaded independently of the
+// pending-request list so the dashboard remains accurate after a reload.
+router.get(
+  "/current-pool",
+  asyncHandler(async (req: AuthedRequest, res) => {
+    const vehicle = await prisma.vehicle.findUnique({ where: { driverId: req.user!.id } });
+    if (!vehicle) return res.json(null);
+    const pool = await prisma.pool.findFirst({
+      where: {
+        vehicleId: vehicle.id,
+        status: { in: ["OPEN", "MATCHED", "DRIVER_ARRIVED", "STARTED"] },
+      },
+      include: {
+        vehicle: true,
+        rideRequests: {
+          where: { status: { in: ["MATCHED", "DRIVER_ARRIVED", "STARTED"] } },
+          include: { passenger: { select: { name: true } } },
+        },
+      },
+    });
+    res.json(pool);
+  })
+);
+
 router.get(
   "/pools/:id",
   asyncHandler(async (req: AuthedRequest, res) => {
