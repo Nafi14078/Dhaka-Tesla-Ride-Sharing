@@ -13,6 +13,11 @@ export const loginSchema = z.object({
   password: z.string().min(1),
 });
 
+export const googleAuthSchema = z.object({
+  credential: z.string().min(1),
+  role: z.enum(["PASSENGER", "DRIVER"]).optional(),
+});
+
 export const createRideRequestSchema = z.object({
   pickupZone: z.string().min(1),
   destinationZone: z.string().min(1),

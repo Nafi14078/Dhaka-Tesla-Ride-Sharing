@@ -193,7 +193,16 @@ cp .env.example .env
 | `DATABASE_URL` | `api` (Prisma) | Full connection string |
 | `PORT` | `api` | Express listen port (default 4000) |
 | `JWT_SECRET` | `api` | Signs auth tokens — set a long random string, never the placeholder, outside local dev |
+| `GOOGLE_CLIENT_ID` | `api` | Verifies Google ID tokens; use the OAuth 2.0 Web client ID |
 | `NEXT_PUBLIC_API_URL` | `web` | Where the frontend sends API requests |
+| `NEXT_PUBLIC_GOOGLE_CLIENT_ID` | `web` | Enables the Google sign-in button; use the same OAuth 2.0 Web client ID |
+
+Google sign-in requires an OAuth 2.0 **Web application** client in Google Cloud
+Console. Add each frontend origin (for local development, `http://localhost:3000`)
+to its Authorized JavaScript origins, then set both client ID variables above
+to that client ID. The frontend value is embedded at build time, so rebuild the
+web container after changing it. The backend verifies the ID token and only
+creates a new account through the signup page, where the user chooses a role.
 
 ## Running with Docker (recommended)
 
@@ -259,6 +268,7 @@ All routes except `/auth/*` and `/health` require `Authorization: Bearer <token>
 ```
 POST   /auth/signup                    { name, email, password, role, phone? }
 POST   /auth/login                     { email, password }
+POST   /auth/google                    { credential, role? }  Google ID token; role is needed only for first signup
 
 GET    /rides/zones                    list of Dhaka zone names
 POST   /rides                          [passenger] { pickupZone, destinationZone, seats }

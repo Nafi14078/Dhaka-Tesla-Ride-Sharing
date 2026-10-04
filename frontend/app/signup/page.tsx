@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { api, ApiError } from "@/lib/api";
 import { saveSession } from "@/lib/auth";
+import { GoogleSignInButton } from "@/components/GoogleSignInButton";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -23,6 +24,20 @@ export default function SignupPage() {
       router.push(role === "DRIVER" ? "/driver" : "/passenger");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Something went wrong");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleGoogleCredential(credential: string) {
+    setError("");
+    setLoading(true);
+    try {
+      const result = await api.googleAuth(credential, role);
+      saveSession(result.token, result.user);
+      router.push(result.user.role === "DRIVER" ? "/driver" : "/passenger");
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Could not sign up with Google");
     } finally {
       setLoading(false);
     }
@@ -53,6 +68,11 @@ export default function SignupPage() {
             🚗 Driver
           </button>
         </div>
+
+        <div style={{ display: "flex", justifyContent: "center", margin: "16px 0 10px" }}>
+          <GoogleSignInButton disabled={loading} onCredential={handleGoogleCredential} onError={setError} />
+        </div>
+        <p className="muted" style={{ textAlign: "center", margin: "0 0 14px" }}>or sign up with email</p>
 
         <form onSubmit={handleSubmit}>
           <label>Name</label>

@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { asyncHandler } from "../middleware/errorHandler";
-import { signupSchema, loginSchema } from "../validation/schemas";
+import { signupSchema, loginSchema, googleAuthSchema } from "../validation/schemas";
 import * as authService from "../services/auth.service";
 
 const router = Router();
@@ -19,6 +19,15 @@ router.post(
   asyncHandler(async (req, res) => {
     const body = loginSchema.parse(req.body);
     const result = await authService.login(body.email, body.password);
+    res.json(result);
+  })
+);
+
+router.post(
+  "/google",
+  asyncHandler(async (req, res) => {
+    const body = googleAuthSchema.parse(req.body);
+    const result = await authService.googleLogin(body.credential, body.role);
     res.json(result);
   })
 );

@@ -40,6 +40,9 @@ export const api = {
   login: (body: { email: string; password: string }) =>
     request<AuthResult>("/auth/login", { method: "POST", body: JSON.stringify(body) }),
 
+  googleAuth: (credential: string, role?: "PASSENGER" | "DRIVER") =>
+    request<AuthResult>("/auth/google", { method: "POST", body: JSON.stringify({ credential, role }) }),
+
   zones: () => request<Array<{ name: string }>>("/rides/zones"),
 
   route: (pickupZone: string, destinationZone: string) =>
